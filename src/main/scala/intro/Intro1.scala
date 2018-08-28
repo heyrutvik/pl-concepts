@@ -12,7 +12,7 @@ object Intro1 {
     * binary operation using `Prim` data constructor
     */
 
-  trait Expr
+  sealed trait Expr
   case class CstI(value: Int) extends Expr
   case class Prim(op: String, left: Expr, right: Expr) extends Expr
 

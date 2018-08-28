@@ -8,6 +8,9 @@ object Intro2 {
 
   /**
     * same "abstract syntax" representation as `Intro1` with added `Var` construct
+    *
+    * note: trait is not `sealed` by intention
+    *       see Exercise1 (4)
     */
 
   trait Expr
