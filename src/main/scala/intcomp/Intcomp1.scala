@@ -136,4 +136,73 @@ object Intcomp1 {
   val e9 = Let("z", CstI(22), Prim("+", Var("y"), Var("z")))
   assert(subst(e9)(List(("y", Var("z")))) == Let("z1",CstI(22),Prim("+",Var("z"),Var("z1"))),
     s"subst ${subst(e9)(List(("y", Var("z"))))} != Let(z1,CstI(22),Prim(+,Var(z),Var(z1)))")
+
+
+  /**
+    * Integer Addresses instead of Names
+    *
+    * "abstract syntax" for target expression `t`
+    */
+  sealed trait TExpr
+  case class TCstI(value: Int) extends TExpr
+  case class TVar(index: Int) extends TExpr
+  case class TLet(rhs: TExpr, body: TExpr) extends TExpr
+  case class TPrim(op: String, left: TExpr, right: TExpr) extends TExpr
+
+  /**
+    * `tcomp` is a compiler which generates the target expression
+    * from the simple expression using a list of free variables it contains
+    */
+  def tcomp(e: Expr)(vs: List[String]): TExpr = e match {
+    case CstI(v) => TCstI(v)
+    case Var(s) => TVar(vs.indexOf(s))
+    case Let(s, rhs, body) => TLet(tcomp(rhs)(vs), tcomp(body)(s :: vs))
+    case Prim(op, left, right) => TPrim(op, tcomp(left)(vs), tcomp(right)(vs))
+  }
+
+  /**
+    * `teval` is evaluator which evaluates the target expression
+    */
+  def teval(te: TExpr)(is: List[Int]): Int = te match {
+    case TCstI(v) => v
+    case TVar(i) => is(i)
+    case TLet(rhs, body) =>
+      val v1 = teval(rhs)(is)
+      val is1 = v1 :: is
+      teval(body)(is1)
+    case TPrim("+", left, right) => teval(left)(is) + teval(right)(is)
+    case TPrim("*", left, right) => teval(left)(is) * teval(right)(is)
+    case TPrim("-", left, right) => teval(left)(is) - teval(right)(is)
+    case _ => sys.error("unknown target expression")
+  }
+
+  /**
+    * note:
+    *
+    * notice that interpreter `eval` had a list of (String, Int) as an environment
+    * which is list of variable name and corresponding value.
+    *
+    * but,
+    * two-stage compiled execution has two phase, compile-time `tcomp` and run-time `teval`
+    * `tcomp` has list of variable as an environment
+    * `teval` has list of value as an environment
+    *
+    * relation:
+    * teval (tcomp e []) [] == eval e []
+    *
+    * sidenote:
+    * we can define `eval1` for closed expression using `tcomp` and `teval` for target expression
+    * as follows,
+    */
+
+  // if given `e` is closed expression then compile and evaluate using `tcomp` and `teval` respectively
+  def eval1(e: Expr) = if (closed1(e)) teval(tcomp(e)(Nil))(Nil) else sys.error(s"expression is not closed: $e")
+
+  val e2 = {
+    Let("x", CstI(10),
+      Let("y", CstI(20),
+        Prim("+", Var("x"), Var("y"))))
+  }
+
+  assert(eval1(e2) == 30, s"(teval . tcomp)($e2) != 30")
 }
