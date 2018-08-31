@@ -224,18 +224,18 @@ object Intcomp1 {
     * `c` is control - list of instruction yet to evaluate
     * `s` is stack for values - intermediate or final result
     */
-  def rinstreval(c: List[RInstr])(s: List[Int]): Int = (c, s) match {
+  def reval(c: List[RInstr])(s: List[Int]): Int = (c, s) match {
     case (Nil, v :: _) => v
     case (Nil, Nil) => sys.error("no result on stack")
-    case (RCstI(v) :: tail, s) => rinstreval(tail)(v :: s)                  // constant: push on stack
-    case (RAdd :: tail, v1 :: v2 :: s) => rinstreval(tail)(v1 + v2 :: s)    // add: push sum of top two popped value
-    case (RMul :: tail, v1 :: v2 :: s) => rinstreval(tail)(v1 * v2 :: s)    // mul: push multiplication of top two popped value
-    case (RSub :: tail, v1 :: v2 :: s) => rinstreval(tail)(v1 - v2 :: s)    // sub: push subtract of top two popped value
-    case (RDup :: tail, v1 :: s) => rinstreval(tail)(v1 :: v1 :: s)         // duplicate: push same value as top
-    case (RSwap :: tail, v1 :: v2 :: s) => rinstreval(tail)(v2 :: v1 :: s)  // swap: push swap top two popped value
+    case (RCstI(v) :: tail, s) => reval(tail)(v :: s)                  // constant: push on stack
+    case (RAdd :: tail, v1 :: v2 :: s) => reval(tail)(v1 + v2 :: s)    // add: push sum of top two popped value
+    case (RMul :: tail, v1 :: v2 :: s) => reval(tail)(v1 * v2 :: s)    // mul: push multiplication of top two popped value
+    case (RSub :: tail, v1 :: v2 :: s) => reval(tail)(v1 - v2 :: s)    // sub: push subtract of top two popped value
+    case (RDup :: tail, v1 :: s) => reval(tail)(v1 :: v1 :: s)         // duplicate: push same value as top
+    case (RSwap :: tail, v1 :: v2 :: s) => reval(tail)(v2 :: v1 :: s)  // swap: push swap top two popped value
     case _ => sys.error("unknown expression")
   }
 
   val re1 = List(RCstI(1), RCstI(1), RAdd, RCstI(2), RMul)
-  assert(rinstreval(re1)(Nil) == 4, s"rinstreval ${re1} != 4")
+  assert(reval(re1)(Nil) == 4, s"rinstreval ${re1} != 4")
 }
