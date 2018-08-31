@@ -208,7 +208,7 @@ object Intcomp1 {
 
 
   /**
-    * Stack Machines for Expression Evaluation
+    * Stack Machine for Expression Evaluation
     */
   sealed trait RInstr
   case class RCstI(value: Int) extends RInstr
@@ -233,9 +233,71 @@ object Intcomp1 {
     case (RSub :: tail, v1 :: v2 :: s) => reval(tail)(v1 - v2 :: s)    // sub: push subtract of top two popped value
     case (RDup :: tail, v1 :: s) => reval(tail)(v1 :: v1 :: s)         // duplicate: push same value as top
     case (RSwap :: tail, v1 :: v2 :: s) => reval(tail)(v2 :: v1 :: s)  // swap: push swap top two popped value
-    case _ => sys.error("unknown expression")
+    case _ => sys.error("unknown instruction")
   }
 
   val re1 = List(RCstI(1), RCstI(1), RAdd, RCstI(2), RMul)
   assert(reval(re1)(Nil) == 4, s"rinstreval ${re1} != 4")
+
+
+  /**
+    * Unified Stack Machine for Expression Evaluation
+    *
+    * unified Stack:
+    *   means it holds variable "reference" as well as intermediate results
+    *
+    * instructions for unified stack machine evaluator
+    */
+  sealed trait SInstr
+  case class SCstlI(value: Int) extends SInstr
+  case class SVar(index: Int) extends SInstr
+  case object SAdd extends SInstr
+  case object SMul extends SInstr
+  case object SSub extends SInstr
+  case object SPop extends SInstr
+  case object SSwap extends SInstr
+
+  /**
+    * compiler `scomp` will use these data to compute the index of variables in stack
+    */
+  sealed trait StackValue
+  case object Value extends StackValue
+  case class Bound(symbol: String) extends StackValue
+
+  /**
+    * unified stack instruction compiler
+    */
+  def scomp(e: Expr)(senv: List[StackValue]): List[SInstr] = e match {
+    case CstI(v) => List(SCstlI(v))
+    case Var(s) => List(SVar(senv.indexOf(Bound(s))))
+    case Let(s, rhs, body) =>
+      scomp(rhs)(senv) ::: scomp(body)(Bound(s) :: senv) ::: List(SSwap, SPop)
+    case Prim("+", e1, e2) => scomp(e1)(senv) ::: scomp(e2)(Value :: senv) ::: List(SAdd)
+    case Prim("*", e1, e2) => scomp(e1)(senv) ::: scomp(e2)(Value :: senv) ::: List(SMul)
+    case Prim("-", e1, e2) => scomp(e1)(senv) ::: scomp(e2)(Value :: senv) ::: List(SSwap)
+    case Prim(_, _, _) => sys.error("unknown expression")
+  }
+
+//  println(scomp(e2)(Nil))
+
+  /**
+    * unified stack instruction interpreter
+    */
+  def seval(sis: List[SInstr])(s: List[Int]): Int = (sis, s) match {
+    case (Nil, v :: _) => v
+    case (Nil, Nil) => sys.error("no result on stack")
+    case (SCstlI(v) :: tail, s) => seval(tail)(v :: s)
+    case (SVar(i) :: tail, s) => seval(tail)(s(i) :: s)
+    case (SAdd :: tail, v1 :: v2 :: s) => seval(tail)(v1 + v2 :: s)
+    case (SMul :: tail, v1 :: v2 :: s) => seval(tail)(v1 * v2 :: s)
+    case (SSub :: tail, v1 :: v2 :: s) => seval(tail)(v1 - v2 :: s)
+    case (SPop :: tail, _ :: s) => seval(tail)(s)
+    case (SSwap :: tail, v1 :: v2 :: s) => seval(tail)(v2 :: v1 :: s)
+    case _ => sys.error("unknown instruction")
+  }
+
+  // same as `eval1`.. but uses unified stack
+  def eval2(e: Expr) = if (closed1(e)) seval(scomp(e)(Nil))(Nil) else sys.error(s"expression is not closed: $e")
+
+  assert(eval2(e2) == 30, s"(seval . scomp)($e2) != 30")
 }
