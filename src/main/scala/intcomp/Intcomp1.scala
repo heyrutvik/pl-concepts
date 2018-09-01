@@ -249,13 +249,13 @@ object Intcomp1 {
     * instructions for unified stack machine evaluator
     */
   sealed trait SInstr
-  case class SCstlI(value: Int) extends SInstr
-  case class SVar(index: Int) extends SInstr
+  case class SCstlI(value: Int) extends SInstr                         // hold actual value
+  case class SVar(index: Int) extends SInstr                           // hold index in stack
   case object SAdd extends SInstr
   case object SMul extends SInstr
   case object SSub extends SInstr
-  case object SPop extends SInstr
-  case object SSwap extends SInstr
+  case object SPop extends SInstr                                      // remove top value from stack
+  case object SSwap extends SInstr                                     // swap top two values
 
   /**
     * compiler `scomp` will use these data to compute the index of variables in stack
@@ -266,6 +266,8 @@ object Intcomp1 {
 
   /**
     * unified stack instruction compiler
+    *
+    * `senv` hold the possible "single" value of primitive operation and variable binding as well
     */
   def scomp(e: Expr)(senv: List[StackValue]): List[SInstr] = e match {
     case CstI(v) => List(SCstlI(v))
@@ -278,20 +280,18 @@ object Intcomp1 {
     case Prim(_, _, _) => sys.error("unknown expression")
   }
 
-//  println(scomp(e2)(Nil))
-
   /**
     * unified stack instruction interpreter
     */
   def seval(sis: List[SInstr])(s: List[Int]): Int = (sis, s) match {
     case (Nil, v :: _) => v
     case (Nil, Nil) => sys.error("no result on stack")
-    case (SCstlI(v) :: tail, s) => seval(tail)(v :: s)
-    case (SVar(i) :: tail, s) => seval(tail)(s(i) :: s)
+    case (SCstlI(v) :: tail, s) => seval(tail)(v :: s)                 // add value on stack
+    case (SVar(i) :: tail, s) => seval(tail)(s(i) :: s)                // add value on stack from index of stack
     case (SAdd :: tail, v1 :: v2 :: s) => seval(tail)(v1 + v2 :: s)
     case (SMul :: tail, v1 :: v2 :: s) => seval(tail)(v1 * v2 :: s)
     case (SSub :: tail, v1 :: v2 :: s) => seval(tail)(v1 - v2 :: s)
-    case (SPop :: tail, _ :: s) => seval(tail)(s)
+    case (SPop :: tail, _ :: s) => seval(tail)(s)                      // remove top value from stack
     case (SSwap :: tail, v1 :: v2 :: s) => seval(tail)(v2 :: v1 :: s)
     case _ => sys.error("unknown instruction")
   }
