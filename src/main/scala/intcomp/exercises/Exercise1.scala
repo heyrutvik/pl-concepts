@@ -7,7 +7,7 @@ object Exercise1 {
   /**
     * add multiple sequential let-bindings in `Expr` from `Intcomp1`
     */
-  trait Expr
+  sealed trait Expr
   case class CstI(value: Int) extends Expr
   case class Var(symbol: String) extends Expr
   case class Let(bindings: List[Bind], body: Expr) extends Expr
