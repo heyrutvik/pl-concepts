@@ -1,19 +1,21 @@
 package firstorder.exercises
 
-object Exercise3 {
+object Exercise6 {
 
   /**
-    * adding functions with multiple arguments in `fun.Expr`
+    * adding tuple in `Exercise6`
     */
 
   type Env = firstorder.Env[Value]
 
+  // TupV added to Value type
   sealed trait Value
   case class Num(i: Int) extends Value
+  case class TupV(vs: List[Value]) extends Value
   case class Closure(f: String, ps: List[String], fbody: Expr, fenv: Env) extends Value
 
   /**
-    * change abstract syntax to accommodate functions with multiple arguments
+    * change abstract syntax to accommodate tuple and its selector
     */
   sealed trait Expr
   case class CstI(v: Int) extends Expr
@@ -22,33 +24,38 @@ object Exercise3 {
   case class Let(s: String, rhs: Expr, body: Expr) extends Expr
   case class Prim(op: String, left: Expr, right: Expr) extends Expr
   case class If(cond: Expr, thenp: Expr, elsep: Expr) extends Expr
-  // multiple param list `ps` for function definition
   case class LetFun(f: String, ps: List[String], fbody: Expr, lbody: Expr) extends Expr
-  // multiple argument `as` to function call
   case class Call(f: Expr, as: List[Expr]) extends Expr
+  // tuple definition
+  case class Tup(vs: List[Expr]) extends Expr
+  // tuple selector
+  case class Sel(i: Int, e: Expr) extends Expr      // index `i` starts from 1
 
   /**
-    * evaluator for language with multiple argument list to function
+    * evaluator: case added to handle tuple and selector
+    *
+    * note: return type of `eval` is now `Value` because it can be
+    *       return integer as well as tuple value.
     */
-  def eval(e: Expr)(env: Env): Int = e match {
-    case CstI(i) => i
-    case CstB(b) => if (b) 1 else 0
+  def eval(e: Expr)(env: Env): Value = e match {
+    case CstI(i) => Num(i)
+    case CstB(b) => Num(if (b) 1 else 0)
 
     case Var(s) =>
       firstorder.lookup(env)(s) match {
-        case Num(v) => v
+        case n: Num => n
+        case t: TupV => t
         case _ => sys.error("Var: ")
       }
 
     case Let(s, rhs, body) =>
       val sv = eval(rhs)(env)
-      val nenv = (s, Num(sv)) :: env
-      eval(body)(nenv)
+      eval(body)((s, sv) :: env)
 
     case Prim(op, l, r) =>
-      val l1 = eval(l)(env)
-      val r1 = eval(r)(env)
-      op match {
+      val Num(l1) = eval(l)(env)
+      val Num(r1) = eval(r)(env)
+      val ret = op match {
         case "*" => l1 * r1
         case "+" => l1 + r1
         case "-" => l1 - r1
@@ -56,6 +63,7 @@ object Exercise3 {
         case "<" => if (l1 < r1) 1 else 0
         case _ => sys.error(s"$op is not primitive operation")
       }
+      Num(ret)
 
     case If(cond, thenp, elsep) =>
       val cv = eval(cond)(env)
@@ -69,7 +77,7 @@ object Exercise3 {
       firstorder.lookup(env)(f) match {
         case c @ Closure(f, ps, body, fenv) if ps.nonEmpty =>
           val nenv = ps.zip(as).map {
-            case (s,e) => (s, Num(eval(e)(env)))
+            case (s,e) => (s, eval(e)(env))
           }
           val bodyEnv = nenv ::: List((f, c)) ::: fenv
           eval(body)(bodyEnv)
@@ -77,9 +85,33 @@ object Exercise3 {
       }
 
     case Call(_, _) => sys.error(s"function application error")
+
+    case Tup(vs) => TupV(vs.map(v => eval(v)(env)))
+
+    case Sel(i, e) =>
+      eval(e)(env) match {
+        case TupV(vs) if i < vs.length => vs(i-1)
+        case _ => sys.error("Sel: ")
+      }
   }
 
-  // sum function
-  val sum = LetFun("sum", List("x", "y"), Prim("+", Var("x"), Var("y")), Call(Var("sum"), List(CstI(1), CstI(1))))
-  assert(eval(sum)(firstorder.emptyEnv) == 2, s"$sum != 2")
+  // let s = (1,2,1+2) in #1(s) end
+  val t1 =
+    Let("s",
+      Tup(List(CstI(1), CstI(2), Prim("+", CstI(1), CstI(2)))),
+      Sel(1, Var("s"))
+    )
+  assert(eval(t1)(firstorder.emptyEnv) == Num(1))
+
+  // let s = ((1,2,1+2),2,1+2) in #1(s) end
+  val t2 =
+    Let("s",
+      Tup(List(
+        Tup(List(CstI(1), CstI(2), Prim("+", CstI(1), CstI(2)))),
+        CstI(2),
+        Prim("+", CstI(1), CstI(2)))
+      ),
+      Sel(1, Var("s"))
+    )
+  assert(eval(t2)(firstorder.emptyEnv) == TupV(List(Num(1), Num(2), Num(3))))
 }
