@@ -3,7 +3,7 @@ package firstorder.exercises
 object Exercise6 {
 
   /**
-    * adding tuple in `Exercise6`
+    * adding tuple in `Exercise3`
     */
 
   type Env = firstorder.Env[Value]
