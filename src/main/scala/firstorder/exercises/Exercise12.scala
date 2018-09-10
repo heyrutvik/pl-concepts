@@ -1,6 +1,6 @@
 package firstorder.exercises
 
-object Exercise12 extends App {
+object Exercise12 {
 
   /**
     * minimal type checker to demonstrate mutual recursion expression type check
@@ -76,5 +76,5 @@ object Exercise12 extends App {
   val isOdd = FunDef("isOdd", "x", TypI, If(Prim("=", Var("x"), CstI(0)), CstB(false), Call(Var("isEven"), Prim("-", Var("x"), CstI(1)))), TypB)
   val mr = LetFun(List(isEven, isOdd), Call(Var("isEven"), CstI(3)))
 
-  println(typ(mr)(firstorder.emptyEnv))
+  assert(typ(mr)(firstorder.emptyEnv) == TypB)
 }

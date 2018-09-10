@@ -1,6 +1,6 @@
 package firstorder.exercises
 
-object Exercise10 extends App {
+object Exercise10 {
 
   /**
     * minimal language to demonstrate mutual recursion expression
@@ -77,5 +77,5 @@ object Exercise10 extends App {
   val isOdd = FunDef("isOdd", "x", If(Prim("=", Var("x"), CstI(0)), CstB(false), Call(Var("isEven"), Prim("-", Var("x"), CstI(1)))))
   val mr = LetFun(List(isEven, isOdd), Call(Var("isEven"), CstI(3)))
 
-  println(eval(mr)(firstorder.emptyEnv))
+  assert(eval(mr)(firstorder.emptyEnv) == 0)
 }
