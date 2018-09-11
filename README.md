@@ -13,3 +13,5 @@ Most of the examples of the book are also ported to Scala.
 3 From Concrete Syntax to Abstract Syntax
 
 4 [A First-Order Functional Language](https://github.com/heyrutvik/pl-concepts/tree/master/src/main/scala/firstorder)
+
+4 [Higher-Order Functions](https://github.com/heyrutvik/pl-concepts/tree/master/src/main/scala/higherorder)
