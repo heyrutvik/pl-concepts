@@ -13,6 +13,7 @@ case class Prim(op: String, left: Expr, right: Expr) extends Expr
 // new cases added here for first-order language
 case class If(cond: Expr, thenp: Expr, elsep: Expr) extends Expr
 case class LetFun(s: String, p: String, fbody: Expr, lbody: Expr) extends Expr
+case class Lambda(p: String, fbody: Expr) extends Expr
 case class Call(left: Expr, right: Expr) extends Expr
 
 object Fun {
@@ -73,6 +74,9 @@ object Fun {
           eval(fb)((x, xv) :: (f, fc) :: fenv)
         case _ => sys.error("eval: call not a function")
       }
+
+    case Lambda(p, fbody) =>
+      Closure("lambda", p, fbody, env)
   }
 
   val g = LetFun("g", "y", Prim("+", Var("x"), Var("y")), Call(Var("g"), Prim("*", CstI(2), Var("x"))))
@@ -108,4 +112,23 @@ object Fun {
     Call(Var("fact"), CstI(3)))
 
   assert(eval(fact)(firstorder.emptyEnv) == Num(6), s"fact(3): (3 * 2 * 1) != 6")
+
+  /**
+    * // F#
+    * let double f = \x => f (f x) in (double (\x => x + 1))(1) end
+    *
+    * // Scala
+    * val double(f: Int => Int) = { x =>
+    *   f(f(x))
+    * }
+    * val g = double(x => x + 1)
+    * g(1)
+    */
+  val double =
+    LetFun(
+      "double",
+      "f",
+      Lambda("x", Call(Var("f"), Call(Var("f"), Var("x")))),
+      Call(Call(Var("double"), Lambda("x", Prim("+", Var("x"), CstI(1)))), CstI(1)))
+  assert(eval(double)(firstorder.emptyEnv) == Num(3))
 }
