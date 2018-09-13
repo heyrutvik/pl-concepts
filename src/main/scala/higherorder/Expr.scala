@@ -1,4 +1,4 @@
-package higherorder.fun
+package higherorder
 
 /**
   * same as `firstorder.fun.Expr` except the logic in `Call` case
