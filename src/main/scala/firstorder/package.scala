@@ -13,7 +13,7 @@ package object firstorder {
     case Nil => ys
     case h :: t =>
       if (ys.contains(h)) union(t, ys)
-      else h :: union(xs, ys)
+      else h :: union(t, ys)
   }
 
   def unique[A](xs: List[A]): List[A] = xs.distinct
