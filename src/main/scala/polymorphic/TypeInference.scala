@@ -239,8 +239,6 @@ object TypeInference {
       val lbodyEnv = (f, generalize(lvl, ft)) :: env
       typ(lbody, lvl, lbodyEnv)
 
-    case Lambda(x, fbody) => sys.error(s"lambda not supported yet!")
-
     case Call(eFun, eArg) =>
       val ft = typ(eFun, lvl, env)
       val pt = typ(eArg, lvl, env)
