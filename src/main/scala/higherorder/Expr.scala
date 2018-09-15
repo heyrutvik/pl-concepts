@@ -3,7 +3,9 @@ package higherorder
 /**
   * same as `firstorder.fun.Expr` except the logic in `Call` case
   */
-sealed trait Expr
+
+// NOTE: `sealed` removed from `Expr` declaration to extend it in `polymorphic.exercises.Exercise2`
+trait Expr
 case class CstI(v: Int) extends Expr
 case class CstB(v: Boolean) extends Expr
 case class Var(s: String) extends Expr
@@ -15,7 +17,7 @@ case class If(cond: Expr, thenp: Expr, elsep: Expr) extends Expr
 case class LetFun(s: String, p: String, fbody: Expr, lbody: Expr) extends Expr
 case class Call(left: Expr, right: Expr) extends Expr
 
-object Fun extends App {
+object Fun {
 
   // environment representation.. maps name to corresponding `Value`
   type Env = firstorder.Env[Value]
