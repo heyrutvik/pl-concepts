@@ -131,4 +131,11 @@ object Fun {
       Lambda("x", Call(Var("f"), Call(Var("f"), Var("x")))),
       Call(Call(Var("double"), Lambda("x", Prim("+", Var("x"), CstI(1)))), CstI(1)))
   assert(eval(double)(firstorder.emptyEnv) == Num(3))
+
+  // let x = 1 in let f y = x + y in f 1 end end
+  val freeLambda =
+    Let("x",
+      CstI(1),
+      LetFun("f", "y", Prim("+", Var("y"), Var("y")), Call(Var("f"), CstI(1))))
+  assert(eval(freeLambda)(firstorder.emptyEnv) == Num(2))
 }
